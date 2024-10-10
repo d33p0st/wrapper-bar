@@ -4,12 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wrapper-bar"
-version = "0.1.5"
+version = "0.1.6"
 description = "Progress Bar with command wrapping"
-requires-python = ">=3.9"
+requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -30,6 +31,6 @@ maintainers = [
 dependencies = ['colorama', 'progressbar', 'requests', 'tqdm']
 
 [project.urls]
-GitHub = 'https://github.com/d33pster/wrapper-bar'
-Issues = 'https://github.com/d33pster/wrapper-bar/issues'
-Documentation = 'https://d33pster.github.io/wrapper-bar/'
+GitHub = 'https://github.com/d33p0st/wrapper-bar'
+Issues = 'https://github.com/d33p0st/wrapper-bar/issues'
+Documentation = 'https://d33p0st.in/documentation/libraries/wrapper_bar#libraries'

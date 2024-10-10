@@ -26,11 +26,12 @@ wrapper module for wrapping commands across a progressbar.
 
 from io import TextIOWrapper
 from os import getcwd as pwd
-from os.path import join as jPath, abspath, isdir
+from os.path import join as jPath, isdir, expanduser, expandvars
 from pathlib import PurePosixPath
 from time import sleep
 from datetime import datetime
 from types import CodeType
+from typing import List, Literal, Union
 import requests.adapters
 from tqdm import tqdm
 import progressbar
@@ -102,7 +103,7 @@ class Wrapper:
         """Initialize the Wrapper class"""
         self.marker = marker
     
-    def decoy(self, label:str = "", delay: float = 0.1, width:float = 50, timer: str = 'ETA'):
+    def decoy(self, label:str = "", delay: float = 0.1, width:float = 50, timer: Literal['ETA', 'ElapsedTime'] = 'ETA') -> None:
         """Create a decoy progress bar, that does nothing at all.
         
         `steps`:
@@ -111,10 +112,8 @@ class Wrapper:
         """
         if timer=='ETA':
             widgets = [label+" ", progressbar.Bar(marker=self.marker), progressbar.AdaptiveETA()]
-        elif timer=='ElapsedTime':
-            widgets = [label+" ", progressbar.Bar(marker=self.marker), progressbar.Timer()]
         else:
-            widgets = [label+" ", progressbar.Bar(marker=self.marker), progressbar.AdaptiveETA()]
+            widgets = [label+" ", progressbar.Bar(marker=self.marker), progressbar.Timer()]
             
         try:
             bar = progressbar.ProgressBar(widgets=widgets, maxval=100, term_width=width).start()
@@ -127,8 +126,8 @@ class Wrapper:
         except KeyboardInterrupt:
             pass
     
-    def shellWrapper(self, shellcommands: list[str], label:str = "", delay: float = 0.1, width:float = 50, timer: str = 'ETA',
-                     logger:bool = False, logfile:TextIOWrapper = None, logfile_auto_close:bool = False):
+    def shellWrapper(self, shellcommands: List[str], label:str = "", delay: float = 0.1, width:float = 50, timer: Literal['ETA', 'ElapsedTime'] = 'ETA',
+                     logger:bool = False, logfile:Union[TextIOWrapper, None] = None, logfile_auto_close:bool = True) -> None:
         """Wrap shell commands with the progressbar.
         
         `steps`:
@@ -148,10 +147,8 @@ class Wrapper:
         
         if timer=='ETA':
             widgets = [label+" ", progressbar.Bar(marker=self.marker), progressbar.AdaptiveETA()]
-        elif timer=='ElapsedTime':
-            widgets = [label+" ", progressbar.Bar(marker=self.marker), progressbar.Timer()]
         else:
-            widgets = [label+" ", progressbar.Bar(marker=self.marker), progressbar.AdaptiveETA()]
+            widgets = [label+" ", progressbar.Bar(marker=self.marker), progressbar.Timer()]
         
         try:
             bar = progressbar.ProgressBar(widgets=widgets, term_width=width, maxval=100).start()
@@ -175,11 +172,11 @@ class Wrapper:
         except KeyboardInterrupt:
             pass
         
-        if logfile_auto_close:
+        if logfile_auto_close and logger and logfile:
             logfile.close()
     
-    def pyWrapper(self, pythonscripts: list[str], label:str = "", delay: float = 0.1, width: float = 50, timer:str = 'ETA',
-                  logger:bool = False, logfile: TextIOWrapper = None, logfile_auto_close:bool = False):
+    def pyWrapper(self, pythonscripts: List[str], label:str = "", delay: float = 0.1, width: float = 50, timer: Literal['ETA', 'ElapsedTime'] = 'ETA',
+                  logger:bool = False, logfile: Union[TextIOWrapper, None] = None, logfile_auto_close:bool = False) -> None:
         """Wrap Python Scripts with the progressbar.
         
         `steps`:
@@ -198,7 +195,9 @@ class Wrapper:
                 logfile = open(jPath(pwd(), '.log'), 'w')
         
         for i in range(len(pythonscripts)):
-            pythonscripts[i] = abspath(pythonscripts[i])
+            pythonscripts[i] = expandvars(expanduser(pythonscripts[i]))
+            if pythonscripts[i].startswith('./'):
+                pythonscripts[i] = jPath(pwd(), pythonscripts[i][2:]) # strip the './'
         
         if timer=='ETA':
             widgets = [label+" ", progressbar.Bar(marker=self.marker), progressbar.AdaptiveETA()]
@@ -232,16 +231,16 @@ class Wrapper:
         if logfile_auto_close:
             logfile.close()
     
-    def __compile(self, codes:list[str]) -> list[CodeType]:
-        compiledcodes:list[CodeType] = []
+    def __compile(self, codes:list[str]) -> List[CodeType]:
+        compiledcodes: List[CodeType] = []
         for code in codes:
             compiledcode = compile(code, '<string>', 'exec')
             compiledcodes.append(compiledcode)
         
         return compiledcodes
     
-    def pyShellWrapper(self, pythoncodes: list[str], dependencies:list[str] = [], label:str = "", delay:float = 0.1, width:float = 50,
-                       timer:str = 'ETA'):
+    def pyShellWrapper(self, pythoncodes: List[str], dependencies:List[str] = [], label:str = "", delay:float = 0.1, width:float = 50,
+                       timer:str = 'ETA') -> None:
         """Wrap inline python codes with a progressbar
         
         `steps`:
@@ -303,12 +302,11 @@ class Wrapper:
         except KeyboardInterrupt:
             pass
     
-    def __fetchPyShellWrapperResults(self):
+    @property
+    def pyShellWrapperResults(self) -> dict:
         return self.__pyshellresults
-    
-    pyShellWrapperResults = property(fget=__fetchPyShellWrapperResults)
 
-    def downloadWrapper(self, link: str, download_to: str, download_filename: str | None = None, type: str = 'direct', github_release: str = 'latest', private_repo: bool = False, github_api_token: str | None = None, label: str | None = None, width: int = 70, chunk_size: int = 1024):
+    def downloadWrapper(self, link: str, download_to: str, download_filename: Union[str, None] = None, type: Literal['direct', 'github_release'] = 'direct', github_release: str = 'latest', private_repo: bool = False, github_api_token: Union[str, None] = None, label: Union[str, None] = None, width: int = 70, chunk_size: Union[int, None] = 1024) -> None:
         """
         Wrap downloads with a progressbar.
 
@@ -341,6 +339,10 @@ class Wrapper:
 
         # resolve download parameters
         # download to
+        download_to = expanduser(expandvars(download_to))
+        if download_to.startswith('./') or download_to.startswith('.\\'):
+            download_to = jPath(pwd(), download_to[2:])
+
         if not isdir(download_to):
             raise NotADirectory("provided download_to parameter is not a directory.")
         
