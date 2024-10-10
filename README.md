@@ -19,7 +19,7 @@ Following `v0.1.5` onwards, It allows wrapping downloads too. It could be a dire
 To install `wrapper-bar`, use pip.
 
 ```bash
-pip install wrapper-bar==0.1.5
+pip install wrapper-bar==0.1.7
 ```
 
 **`Wrapper Bar will help wrap a progress bar across a lot of options including shell commands, python scripts or inline codes, and downloads`**
